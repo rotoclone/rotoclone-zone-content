@@ -1,5 +1,5 @@
 +++
-title = "Making My Website Part 1: Monitoring A Raspberry Pi"
+title = "Making My Website Part 1: Monitoring On A Raspberry Pi"
 tags = ["web-dev", "raspberry-pi"]
 +++
 
