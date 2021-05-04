@@ -248,4 +248,6 @@ And now the moment we've all been waiting for...feast your human eyes on the pre
 TODO
 
 ## So NOW we're done with monitoring
-Now we are. At least, done with making the thing that does the monitoring. There's still some stuff to set up on the Pi make the dashboard server thing start automatically when the Pi boots up and stuff. But I'll save that for another post.
+Now we are. At least, done with making the thing that does the monitoring. I guess technically it's not really "monitoring" because there isn't anything that alerts me if stats go outside of configured ranges or anything. But it does what I need it to do, which is allow me to quickly see resource usage on my Raspberry Pi. Maybe I'll add email alerts someday.
+
+Anyway, there's still some stuff to set up on the Pi make the dashboard server thing start automatically when the Pi boots up and stuff. But I'll save that for another post.
