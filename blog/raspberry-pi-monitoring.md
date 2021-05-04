@@ -123,6 +123,7 @@ impl UpdatingStatsHistory {
             if recent_stats.len() >= consolidation_limit.get() {
                 // the recent stats list has grown too large for its own good, we must consolidate
                 let consolidated_stats = consolidate_all_stats(recent_stats);
+
                 {
                     // this part is in its own block so the mutex lock is held for the minimum time,
                     // since no one can look at the stats history while this is happening
@@ -150,7 +151,52 @@ impl UpdatingStatsHistory {
 }
 ```
 
-I don't want to lose all the stats history if the Pi shuts down though, so I made the it get written to disk periodically. I didn't want to deal with the complexity of a database, so I turned to the tried-and-true "files with JSON in them" strategy. Using [serde](https://serde.rs/) (the gold standard for serialization and deserialization in Rust), every time consolidated stats are written to the circular buffer, they also get serialized to JSON and written to a file. Once that file reaches a certain size, it gets renamed so new stats are written to a fresh file. And once the new file reaches that certain size, it gets renamed to overwrite the old file and the cycle repeats. Astute readers will note that this means half of the persisted stats history will suddenly disappear every so often. That is true. But I can live with it, since it makes the code to manage the stats persistence simpler.
+I don't want to lose all the stats history if the Pi shuts down though, so I made the it get written to disk periodically. I didn't want to deal with the complexity of a database, so I turned to the tried-and-true "files with JSON in them" strategy. Using [serde](https://serde.rs/) (the gold standard for serialization and deserialization in Rust), every time consolidated stats are written to the circular buffer, they also get serialized to JSON and written to a file. Once that file reaches a certain size, it gets renamed so new stats are written to a fresh file. And once the new file reaches that certain size, it gets renamed to overwrite the old file and the cycle repeats.
+
+Here's the code to write the stats to disk:
+```rust
+fn persist_stats(stats: &AllStats, dir: &Path, dir_size_limit_bytes: u64) -> io::Result<()> {
+    // first, ensure the directory we're going to write to exists
+    if !dir.exists() {
+        create_dir_all(dir)?;
+    }
+
+    let current_stats_path = dir.join(CURRENT_HISTORY_FILE_NAME);
+    let old_stats_path = dir.join(OLD_HISTORY_FILE_NAME);
+
+    // divide size limit by 2 since this swaps between 2 files
+    if current_stats_path.exists()
+        && current_stats_path.metadata()?.len() >= (dir_size_limit_bytes / 2)
+    {
+        // stats too big, bye bye old stats
+        rename(&current_stats_path, &old_stats_path)?;
+    }
+
+    let mut current_stats_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(current_stats_path)?;
+    // slap some JSON in there
+    writeln!(current_stats_file, "{}", serde_json::to_string(stats)?)?;
+
+    Ok(())
+}
+```
+
+And I added this to the stats updating code (I made it configurable and everything, wow):
+```rust
+if recent_stats.len() >= consolidation_limit.get() {
+    // the recent stats list has grown too large for its own good, we must consolidate
+    let consolidated_stats = consolidate_all_stats(recent_stats);
+    if let HistoryPersistenceConfig::Enabled { dir, size_limit } = &persistence_config {
+        if let Err(e) = persist_stats(&consolidated_stats, dir, *size_limit) {
+            println!("Error persisting stats to {:?}: {}", dir, e);
+        }
+    }
+// ... the rest of the code from above ...
+```
+
+Astute readers will note that half of the persisted stats history will suddenly disappear every so often. That is true. But I can live with it, since it makes the code to manage the stats persistence simpler.
 
 You can [see the complete stats history code on GitHub](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats_history.rs).
 
@@ -203,5 +249,3 @@ TODO
 
 ## So NOW we're done with monitoring
 Now we are. At least, done with making the thing that does the monitoring. There's still some stuff to set up on the Pi make the dashboard server thing start automatically when the Pi boots up and stuff. But I'll save that for another post.
-
-Right now it's the only thing running on the Raspberry Pi, but there will be more things soon, and I don't want to have to log in and manually start a bunch of stuff every time I reboot the Pi.
