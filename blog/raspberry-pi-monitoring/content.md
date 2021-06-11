@@ -18,7 +18,7 @@ Initially, I thought it would just be a simple API running on the Pi that would 
 So to answer the question I posed to myself in the header up there, I would need a simple webpage hosted on the Raspberry Pi that displays system stats in graph form. And the graphs would necessitate storing a history of the stats.
 
 ## Sounds like you need some way to gather system stats
-It does sound that way, narrative device in the form of headers. (As an aside, I'm now realizing the power of fasterthanli.me's "Cool Bear" thing, and apparently trying to emulate it via these headers.) Anyway, since I'm writing this in Rust, it'll be in the form of a crate. There are a few options here, but I'm going to focus on just a couple.
+It does sound that way, narrative device in the form of headers. Since I'm writing this in Rust, it'll be in the form of a crate. There are a few options here, but I'm going to focus on just a couple.
 
 ### Heim
 [Heim](https://heim-rs.github.io/) seems to be the "robust" system stats crate. By that I mean it's complicated, but powerful, and built with a philosophy of "doing it the right way, not the easy way". As this seems to jive with the philosophy behind Rust, you would think this would be an easy pick. I mean, it's got a whole website and everything! This crate is surely going places. But I tried it out and it just seemed a little overly complex for me, while at the same time missing some features found in other system stats crates. (At this point I don't remember specifically what features I wanted but weren't there, sorry!) I'm sure at some point Heim will surpass the feature set of the other options (maybe it already has), but at the time I decided it wasn't for me.
@@ -26,7 +26,9 @@ It does sound that way, narrative device in the form of headers. (As an aside, I
 ### systemstat
 I found [systemstat](https://github.com/unrelentingtech/systemstat) to be a good mix of a simple enough API and all the features I wanted. That's pretty much all I have to say about it I guess. Kind of underwhelming after writing so much about Heim. Oh well.
 
-So I made [a struct](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats.rs#L17) to store the stats in and used systemstat to fill it to the brim with delicious stats.
+*Note: The rest of this post contains a bunch of Rust code snippets, but don't worry, you don't necessarily need to understand the code in them to follow the post. They're just for extra context.*
+
+I made [a struct](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats.rs#L17) to store the stats in and used systemstat to fill it to the brim with delicious stats.
 
 ```rust
 use chrono::{DateTime, Local};
@@ -78,9 +80,9 @@ impl MemoryStats {
 ```
 
 ## Cool, so we're done with monitoring
-Uh...no. There's still the matter of converting the stats from a big pile in memory to a graph you can look at with your human eyes. Also the stats need to update themselves periodically. Let's go over that next.
+Ha ha, no. There's still the matter of converting the stats from a big pile in memory to a graph you can look at with your human eyes. Also the stats need to update themselves periodically. Let's go over that next.
 
-So the code to update the stats periodically and keep a rolling history of recent stats is actually pretty complicated. Basically, I start up a thread that periodically gathers new stats and adds them to a list. Once the list reaches a certain size, it gets cleared out and all the stats that were in it get "consolidated" (aka averaged) into a single `AllStats` struct, which is placed into a [circular buffer](https://en.wikipedia.org/wiki/Circular_buffer). That way I can keep the stats up to date by gathering data often, and the consolidation allows me to store a longer history of stats in memory than if I had to keep around every single data point.
+So the code to update the stats and keep a rolling history of recent stats is actually pretty complicated. Basically, I start up a thread that periodically gathers new stats and adds them to a list. Once the list reaches a certain size, it gets cleared out and all the stats that were in it get "consolidated" (aka averaged) into a single `AllStats` struct, which is placed into a [circular buffer](https://en.wikipedia.org/wiki/Circular_buffer). That way I can keep the stats up to date by gathering data often, and the consolidation allows me to store a longer history of stats in memory than if I had to keep around every single data point.
 
 Here's the important part of the stats updating code:
 ```rust
@@ -151,7 +153,7 @@ impl UpdatingStatsHistory {
 }
 ```
 
-I don't want to lose all the stats history if the Pi shuts down though, so I made the it get written to disk periodically. I didn't want to deal with the complexity of a database, so I turned to the tried-and-true "files with JSON in them" strategy. Using [serde](https://serde.rs/) (the gold standard for serialization and deserialization in Rust), every time consolidated stats are written to the circular buffer, they also get serialized to JSON and written to a file. Once that file reaches a certain size, it gets renamed so new stats are written to a fresh file. And once the new file reaches that certain size, it gets renamed to overwrite the old file and the cycle repeats.
+I don't want to lose all the stats history if the Pi shuts down though, so I made it write them to disk. I didn't want to deal with the complexity of a database, so I turned to the tried-and-true "files with JSON in them" strategy. Using [serde](https://serde.rs/) (the gold standard for serialization and deserialization in Rust), every time consolidated stats are written to the circular buffer, they also get serialized to JSON and written to a file. Once that file reaches a certain size, it gets renamed so new stats are written to a fresh file. And once the new file reaches that certain size, it gets renamed to overwrite the old file and the cycle repeats.
 
 Here's the code to write the stats to disk:
 ```rust
@@ -196,7 +198,7 @@ if recent_stats.len() >= consolidation_limit.get() {
 // ... the rest of the code from above ...
 ```
 
-Astute readers will note that half of the persisted stats history will suddenly disappear every so often. That is true. But I can live with it, since it makes the code to manage the stats persistence simpler.
+Astute readers will note that half of the persisted stats history will suddenly disappear whenever the new file gets large enough and gets renamed to overwrite the old file. That is true. But I can live with it, since it makes the code to manage the stats persistence simpler.
 
 You can [see the complete stats history code on GitHub](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats_history.rs).
 
@@ -241,13 +243,13 @@ fn rocket() -> Rocket<rocket::Build> {
 ```
 ([Full code here](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/main.rs))
 
-I decided to go with [Chart.js](https://www.chartjs.org/) to draw the graphs, and later noticed that crates.io uses it too. Neat. [Here's the dashboard template if you wanna take a peek](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/templates/dashboard.html.tera).
+I decided to go with [Chart.js](https://www.chartjs.org/) to draw the graphs, and later noticed that [crates.io](https://www.crates.io/) uses it too (for the graphs of crate downloads over time). Neat. Anyway [here's the dashboard template if you wanna take a peek](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/templates/dashboard.html.tera).
 
 And now the moment we've all been waiting for...feast your human eyes on the pretty graphs:
 
-TODO
+[![a screenshot of the dashboard](pretty_graphs_small.jpg)](pretty_graphs_large.jpg)
 
 ## So NOW we're done with monitoring
 Now we are. At least, done with making the thing that does the monitoring. I guess technically it's not really "monitoring" because there isn't anything that alerts me if stats go outside of configured ranges or anything. But it does what I need it to do, which is allow me to quickly see resource usage on my Raspberry Pi. Maybe I'll add email alerts someday.
 
-Anyway, there's still some stuff to set up on the Pi make the dashboard server thing start automatically when the Pi boots up and stuff. But I'll save that for another post.
+Anyway, there's still some stuff to set up on the Pi to make the dashboard server thing start automatically when the Pi boots up and stuff. But I'll save that for another post.
