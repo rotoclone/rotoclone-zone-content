@@ -1,6 +1,7 @@
 +++
 title = "Making My Website Part 1: Monitoring On A Raspberry Pi"
-tags = ["web-dev", "raspberry-pi"]
+description = "Why and how I made a simple system monitor for my Raspberry Pi in Rust."
+tags = ["web-dev", "raspberry-pi", "rust"]
 +++
 
 When I first set out to make a personal website, I knew I wanted to host it on a Raspberry Pi. Why? Well, my brother had given me a Raspberry Pi 3 B+ a few...years ago, and I never did anything with it because (1) I'm lazy and (2) I never came up with a good use for it. But I recently (well, recently-ish) started making a video game, and I wanted to have a dev blog for it at some point. So one day when I was feeling particularly distracted from my video game, I decided to make a website to host said blog on. I figured hosting it on the Raspberry Pi would be a fun adventure. And I recently learned [Rust](https://www.rust-lang.org/), so in an act born out of a desire to do more Rust things, I also decided to write my own web server/static site generator thing in Rust.
@@ -28,8 +29,12 @@ I found [systemstat](https://github.com/unrelentingtech/systemstat) to be a good
 
 *Note: The rest of this post contains a bunch of Rust code snippets, but don't worry, you don't necessarily need to understand the code in them to follow the post. They're just for extra context.*
 
-I made [a struct](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats.rs#L17) to store the stats in and used systemstat to fill it to the brim with delicious stats.
+I added the `systemstat` dependency,
+```toml
+systemstat = "0.1.7"
+```
 
+made a struct to store the stats in,
 ```rust
 use chrono::{DateTime, Local};
 
@@ -49,7 +54,7 @@ pub struct AllStats {
 }
 ```
 
-I'm not going to reproduce all the code for gathering the stats here ([check it out on GitHub if you're interested](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats.rs)), but here's a taste of how I gather RAM stats:
+and used systemstat to fill it to the brim with delicious stats. I'm not going to reproduce all the code for gathering the stats here ([check it out on GitHub if you're interested](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats.rs)), but here's a taste of how I gather RAM stats:
 
 ```rust
 pub struct MemoryStats {
@@ -203,15 +208,21 @@ Astute readers will note that half of the persisted stats history will suddenly 
 You can [see the complete stats history code on GitHub](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats_history.rs).
 
 ## But how do my human eyes see the pretty graphs
-Yes yes, getting to that. For this we'll need something that can serve web pages. Something like...[Rocket](https://rocket.rs/)! As far as Rust web frameworks go, I've only tried Rocket and [Actix Web](https://actix.rs/), and I prefer Rocket. So that's what I went with. It's pretty easy to use. (Spoiler alert: my custom web server thing will also use Rocket.) Since I'm living on the cutting edge here, I decided to use the fancy new unreleased 0.5 version of Rocket. Mainly just because Rocket 0.5 uses stable Rust instead of nightly, but the fact that it's async was also a factor.
+Yes yes, getting to that. For this we'll need something that can serve web pages. Something like...[Rocket](https://rocket.rs/)! As far as Rust web frameworks go, I've only tried Rocket and [Actix Web](https://actix.rs/), and I prefer Rocket. So that's what I went with. It's pretty easy to use. (Spoiler alert: my custom web server thing will also use Rocket.) Since I'm living on the cutting edge here, I decided to use the fancy new release candidate of Rocket 0.5. Mainly just because Rocket 0.5 uses stable Rust instead of nightly, but the fact that it's async was also a factor.
 
 Look how easy:
+
+```toml
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+rocket_dyn_templates = { version = "0.1.0-rc.1", features = ["tera"] }
+```
+
 ```rust
 /// Endpoint to view the dashboard.
 // `dark` is an optional query parameter to control whether to use dark mode or not
 // cuz I like to keep my options open
 #[get("/dashboard?<dark>")]
-fn dashboard(stats_history: State<UpdatingStatsHistory>, dark: Option<bool>) -> Template {
+fn dashboard(stats_history: &State<UpdatingStatsHistory>, dark: Option<bool>) -> Template {
     let context = DashboardContext::from_history(
         &stats_history.stats_history.lock().unwrap(),
         dark.unwrap_or(DEFAULT_DARK_MODE),
