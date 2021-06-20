@@ -16,7 +16,7 @@ In the spirit of this project, of course I wouldn't use some existing monitoring
 ## So what does this monitoring thing need
 Initially, I thought it would just be a simple API running on the Pi that would return the current system state, then I would call it via some client software running on my desktop to visualize the stats. But I realized pretty quickly that the easier route would be to just have a simple dashboard (in the form of a webpage) hosted on the Pi itself, that way it would be completely self-contained.
 
-So to answer the question I posed to myself in the header up there, I would need a simple webpage hosted on the Raspberry Pi that displays system stats in graph form. And the graphs would necessitate storing a history of the stats.
+So to answer the question I posed to myself in the header up there, I would need a simple webpage served from the Raspberry Pi that displays system stats in graph form. And the graphs would necessitate storing a history of the stats.
 
 ## Sounds like you need some way to gather system stats
 It does sound that way, narrative device in the form of headers. Since I'm writing this in Rust, it'll be in the form of a crate. There are a few options here, but I'm going to focus on just a couple.
@@ -54,7 +54,7 @@ pub struct AllStats {
 }
 ```
 
-and used systemstat to fill it to the brim with delicious stats. I'm not going to reproduce all the code for gathering the stats here ([check it out on GitHub if you're interested](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats.rs)), but here's a taste of how I gather RAM stats:
+and used systemstat to fill it to the brim with delicious stats. I'm not going to reproduce all the code for gathering the stats here ([check it out on GitHub if you're interested](https://github.com/rotoclone/system-stats-dashboard/blob/0.2.0/src/stats.rs)), but here's a taste of how I gather RAM stats:
 
 ```rust
 pub struct MemoryStats {
@@ -205,7 +205,7 @@ if recent_stats.len() >= consolidation_limit.get() {
 
 Astute readers will note that half of the persisted stats history will suddenly disappear whenever the new file gets large enough and gets renamed to overwrite the old file. That is true. But I can live with it, since it makes the code to manage the stats persistence simpler.
 
-You can [see the complete stats history code on GitHub](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/stats_history.rs).
+You can [see the complete stats history code on GitHub](https://github.com/rotoclone/system-stats-dashboard/blob/0.2.0/src/stats_history.rs).
 
 ## But how do my human eyes see the pretty graphs
 Yes yes, getting to that. For this we'll need something that can serve web pages. Something like...[Rocket](https://rocket.rs/)! As far as Rust web frameworks go, I've only tried Rocket and [Actix Web](https://actix.rs/), and I prefer Rocket. So that's what I went with. It's pretty easy to use. (Spoiler alert: my custom web server thing will also use Rocket.) Since I'm living on the cutting edge here, I decided to use the fancy new release candidate of Rocket 0.5. Mainly just because Rocket 0.5 uses stable Rust instead of nightly, but the fact that it's async was also a factor.
@@ -252,9 +252,9 @@ fn rocket() -> Rocket<rocket::Build> {
     rocket
 }
 ```
-([Full code here](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/src/main.rs))
+([Full code here](https://github.com/rotoclone/system-stats-dashboard/blob/0.2.0/src/main.rs))
 
-I decided to go with [Chart.js](https://www.chartjs.org/) to draw the graphs, and later noticed that [crates.io](https://www.crates.io/) uses it too (for the graphs of crate downloads over time). Neat. Anyway [here's the dashboard template if you wanna take a peek](https://github.com/rotoclone/system-stats-dashboard/blob/0.1.0/templates/dashboard.html.tera).
+I decided to go with [Chart.js](https://www.chartjs.org/) to draw the graphs, and later noticed that [crates.io](https://www.crates.io/) uses it too (for the graphs of crate downloads over time). Neat. Anyway [here's the dashboard template if you wanna take a peek](https://github.com/rotoclone/system-stats-dashboard/blob/0.2.0/templates/dashboard.html.tera).
 
 And now the moment we've all been waiting for...feast your human eyes on the pretty graphs:
 
