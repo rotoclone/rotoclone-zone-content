@@ -2,7 +2,7 @@
 title = "Making My Website Part 1: Monitoring On A Raspberry Pi"
 description = "Why and how I made a simple system monitor for my Raspberry Pi in Rust."
 tags = ["web-dev", "raspberry-pi", "rust"]
-external_discussions = [{ name = "/r/rust", url = "https://www.reddit.com/r/rust/comments/o4d9xw/writing_a_simple_raspberry_pi_system_monitor_in/" }]
+external_discussions = [{ name = "/r/rust", url = "https://www.reddit.com/r/rust/comments/o4d9xw/writing_a_simple_raspberry_pi_system_monitor_in/" }, { name = "/r/programming", url = "https://www.reddit.com/r/programming/comments/o4de29/writing_a_simple_raspberry_pi_system_monitor_in/"}]
 +++
 
 When I first set out to make a personal website, I knew I wanted to host it on a Raspberry Pi. Why? Well, my brother had given me a Raspberry Pi 3 B+ a few...years ago, and I never did anything with it because (1) I'm lazy and (2) I never came up with a good use for it. But I recently (well, recently-ish) started making a video game, and I wanted to have a dev blog for it at some point. So one day when I was feeling particularly distracted from my video game, I decided to make a website to host said blog on. I figured hosting it on the Raspberry Pi would be a fun adventure. And I recently learned [Rust](https://www.rust-lang.org/), so in an act born out of a desire to do more Rust things, I also decided to write my own web server/static site generator thing in Rust.
