@@ -1,5 +1,5 @@
 +++
-title = "Making My Website Part 2: The Actual Website Part"
+title = "Making My Website Part 2: The Webserver"
 description = "How I built a hybrid webserver/static site generator in Rust."
 tags = ["web-dev", "rust"]
 +++
@@ -114,7 +114,7 @@ Anyway...
 Right you are! Let's take a look at it. But first, I want to explain what the markdown file for a blog post looks like. It has 2 sections: the "front matter" and the actual content. The front matter (a term I stole from Zola, which may have stolen it from elsewhere) is all the metadata about the post, like its title and tags and stuff, in [TOML](https://toml.io/) format. Here's the front matter for this post:
 ```toml
 +++
-title = "Making My Website Part 2: The Actual Website Part"
+title = "Making My Website Part 2: The Webserver"
 description = "How I built a hybrid webserver/static site generator in Rust."
 tags = ["web-dev", "rust"]
 +++
@@ -292,6 +292,24 @@ Utilizing the `RwLock`, the new site is built in the background, and then reques
 With all that set up, adding or modifying any of my blog posts is as simple as logging into my Raspberry Pi and doing a `git pull` on my site content repo. Nice.
 
 ## So that's it?
-Not quite.
+Not quite. I also wanted to serve some static files, like CSS and stuff. So I made a directory for that stuff, and told Rocket to serve files from it:
+```rust
+rocket = rocket.mount("/", FileServer::from(relative!("static")).rank(10))
+```
+In Rocket, routes with lower ranks have higher priority. The `rank(10)` is so if I accidentally include a file with the same path as some other route, it'll use the dynamic route instead of serving the static file.
 
-TODO mention static files like CSS and stuff
+Then I spent way too long messing with the CSS and fonts until I ended up with what you see now. I of course took the time to styles for a dark mode *and* a light mode, which you can toggle using the sun/moon icon waaay up in the top right corner of the page, in case you missed it.
+
+Here are some of my design iterations:
+
+[![old style 1](old_style_1_small.jpg)](old_style_1_large.jpg)
+
+[![old style 2](old_style_2_small.jpg)](old_style_2_large.jpg)
+
+[![old style 3](old_style_3_small.jpg)](old_style_3_large.jpg)
+
+And, for posterity, the style at the time of writing:
+
+[![current style](current_style_small.jpg)](current_style_large.jpg)
+
+And there we have it, my own custom webserver in Rust, serving up pages that are (at least in my opinion) pretty stylin'. Next stop: comments and analytics. But I'll save those for another post. Or two posts.
