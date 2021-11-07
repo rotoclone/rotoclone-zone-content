@@ -2,6 +2,7 @@
 title = "Making My Website Part 2: The Webserver"
 description = "How I built a hybrid webserver/static site generator in Rust."
 tags = ["web-dev", "rust"]
+external_discussions = [{ name = "/r/rust", url = "https://www.reddit.com/r/rust/comments/qovsbv/an_overview_of_the_webserver_i_wrote_for_my_blog/" }]
 +++
 
 [(Part 1 is here.)](/blog/posts/raspberry-pi-monitoring)
@@ -117,6 +118,7 @@ Right you are! Let's take a look at it. But first, I want to explain what the ma
 title = "Making My Website Part 2: The Webserver"
 description = "How I built a hybrid webserver/static site generator in Rust."
 tags = ["web-dev", "rust"]
+external_discussions = [{ name = "/r/rust", url = "https://www.reddit.com/r/rust/comments/qovsbv/an_overview_of_the_webserver_i_wrote_for_my_blog/" }]
 +++
 ```
 It's enclosed in `+++` to separate it from the actual content, which goes below it. I chose 3 plus signs because that's what Zola uses, and why figure out a good delimiter to use that won't conflict with markdown or TOML syntax when someone's already done it for you?
