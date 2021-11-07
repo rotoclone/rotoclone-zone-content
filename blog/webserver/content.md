@@ -74,11 +74,11 @@ fn get_blog_entry(entry_name: String, updating_site: &State<UpdatingSite>) -> Op
     })
 }
 ```
-([Full code here](https://github.com/rotoclone/rotoclone-zone/blob/8bf5b5fbe32cbe22ca3ba762136c865a03f1a0b3/src/main.rs))
+([Full code here](https://github.com/rotoclone/rotoclone-zone/blob/899ac5f25fdb6447429b975ca0406d568abe4809/src/main.rs))
 
 Now you may be thinking "Hey it's not pre-rendered, it literally calls a function called `render` when a blog post is accessed!". And that is true, there is some rendering going on when a blog post is accessed. Technically, the only part of my site that's pre-rendered is the actual content of the blog posts themselves. I write them in markdown, and the pre-rendering process is just converting that markdown into HTML (using [`pulldown-cmark`](https://crates.io/crates/pulldown-cmark)). When a blog post page is accessed, the rendering that happens is taking that HTML and putting it in the "blog post" template I created, which adds the navigation menu and title and footer and all that stuff.
 
-You might think it would be more efficient to pre-render the complete HTML for the blog post pages to files so there would be no rendering at all going on for each request, and it probably would be, but the rendering is pretty fast actually: I did some benchmarks of serving static text vs the same text rendered via a template, and the response time averaged out almost exactly the same. Now, the benchmark was for a very small page, but still. I'm not super worried about the rendering taking too long. I could probably even ditch the pre-rending altogether and just parse the markdown into HTML on every pageload, but I haven't benchmarked that so I don't know how much of a performance hit that would be. Also the pre-rendering code is already written, so I wouldn't have much to gain by throwing it away at this point.
+You might think it would be more efficient to pre-render the complete HTML for the blog post pages to files so there would be no rendering at all going on for each request, and it probably would be, but the rendering is pretty fast actually: I did some benchmarks of serving static text vs the same text rendered via a template, and the response time averaged out almost exactly the same. Now, the benchmark was for a very small page, but still. I'm not super worried about the rendering taking too long. I haven't benchmarked it so I don't know for sure, but it's possible it wouldn't even be that bad to ditch the pre-rending altogether and just parse the markdown into HTML on every pageload. The pre-rendering code is already written though, so I wouldn't have much to gain by throwing it away at this point.
 
 Now if you're not familiar with templates--
 
@@ -221,7 +221,7 @@ impl Site {
     }
 }
 ```
-The real fun stuff happens in `parse_entry_dir`, but I'm not going to reproduce it all here because it's a lot. [The full code is here](https://github.com/rotoclone/rotoclone-zone/blob/8bf5b5fbe32cbe22ca3ba762136c865a03f1a0b3/src/site.rs) if you want to take a look.
+The real fun stuff happens in `parse_entry_dir`, but I'm not going to reproduce it all here because it's a lot. [The full code is here](https://github.com/rotoclone/rotoclone-zone/blob/899ac5f25fdb6447429b975ca0406d568abe4809/src/site.rs) if you want to take a look.
 
 I didn't want to have to restart the server every time I updated the site, so I created an `UpdatingSite` struct, which uses [hotwatch](https://crates.io/crates/hotwatch) to listen for changes to the site content directory and update the site struct in-place whenever it needs to:
 ```rust
@@ -283,7 +283,7 @@ impl UpdatingSite {
     }
 }
 ```
-That's pretty much the whole file, but [here it is in GitHub](https://github.com/rotoclone/rotoclone-zone/blob/8bf5b5fbe32cbe22ca3ba762136c865a03f1a0b3/src/updating_site.rs) if you want.
+That's pretty much the whole file, but [here it is in GitHub](https://github.com/rotoclone/rotoclone-zone/blob/899ac5f25fdb6447429b975ca0406d568abe4809/src/updating_site.rs) if you want.
 
 The `Site` is stored in a `RwLock` so it's safe to update it while the server is running. Any number of things can get read access to a `RwLock` at the same time, but getting write access blocks until all the currently held read locks are released and then blocks anything else from getting read access until the write lock is released. It's basically just a `Mutex`, except allowing read access to multiple things at once. That way requests to the server that require access to the site struct won't get blocked waiting for other requests to release the lock.
 
@@ -294,11 +294,14 @@ With all that set up, adding or modifying any of my blog posts is as simple as l
 ## So that's it?
 Not quite. I also wanted to serve some static files, like CSS and stuff. So I made a directory for that stuff, and told Rocket to serve files from it:
 ```rust
-rocket = rocket.mount("/", FileServer::from(relative!("static")).rank(10))
+// In Rocket, routes with lower ranks have higher priority. The `rank(10)` is so if I accidentally
+// include a file with the same path as some other route, it'll use the dynamic route instead of
+// serving the static file.
+rocket = rocket.mount("/", FileServer::from("static").rank(10))
 ```
-In Rocket, routes with lower ranks have higher priority. The `rank(10)` is so if I accidentally include a file with the same path as some other route, it'll use the dynamic route instead of serving the static file.
+I originally specified the path as `relative!("static")`, but apparently that specifies an absolute path on the machine the binary is *built* on, meaning it didn't work if I built the binary on my desktop and copied it to somewhere else. (Which I want to do because building in release mode takes 45 minutes on my Raspberry Pi, compared to 2 minutes on my desktop.) I changed it to just `"static"` and that seems to point to the directory called "static" relative to wherever the binary is running, which is what I want. Moral of the story: if you want to reference files relative to where your binary will be running...don't use Rocket's `relative!` macro.
 
-Then I spent way too long messing with the CSS and fonts until I ended up with what you see now. I of course took the time to styles for a dark mode *and* a light mode, which you can toggle using the sun/moon icon waaay up in the top right corner of the page, in case you missed it.
+Anyway, then I spent way too long messing with the CSS and fonts until I ended up with what you see now. I of course took the time to make styles for a dark mode *and* a light mode, which you can toggle using the sun/moon icon waaay up at the top of the page on the right side of the navigation bar, in case you missed it.
 
 Here are some of my design iterations:
 
