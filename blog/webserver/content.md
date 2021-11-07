@@ -6,7 +6,7 @@ tags = ["web-dev", "rust"]
 
 [(Part 1 is here.)](/blog/posts/raspberry-pi-monitoring)
 
-With monitoring out of the way, I could start on the actual website. As mentioned in [part 1](/blog/posts/raspberry-pi-monitoring), I decided to write my own hybrid webserver/static site generator for this website in [Rust](https://www.rust-lang.org/) for fun.
+If you're gonna have a website, in my experience it's a good idea to have something that gives people the site's pages when they ask for them. So, as mentioned in [part 1](/blog/posts/raspberry-pi-monitoring), I decided to write my own hybrid webserver/static site generator for this website in [Rust](https://www.rust-lang.org/) to fulfill that role.
 
 ## What's a static site generator?
 If you're not familiar, a static site generator is a thing that takes a bunch of files describing a website and renders them into a pile of HTML and stuff, so then you can just serve those static HTML files instead of having to spend time re-rending every page whenever someone asks for it. So for example, you might have pages for listing all the blog posts written in a given year. The static site generator would find all the posts for each year there are posts and generate pages for every year with the right links, without you having to maintain those pages manually. And when you add a new post, you just re-generate the site and everything gets updated automatically.
@@ -125,7 +125,7 @@ Under the front matter is the actual content (I won't reproduce the entire conte
 ```markdown
 [(Part 1 is here.)](/blog/posts/raspberry-pi-monitoring)
 
-With monitoring out of the way, I could start on the actual website.
+If you're gonna have a website, in my experience it's a good idea to have something that gives people the site's pages when they ask for them.
 ```
 If you're interested, the full source for this blog post can be found [here](https://github.com/rotoclone/rotoclone-zone-content/blob/master/blog/webserver/content.md).
 
